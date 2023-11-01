@@ -68,8 +68,7 @@ def test(args):
     # fake_dataset_size=None leads a test on all the test dataset
     test_dataloader, test_dataset = get_test_dataloader(
         args,
-        fake_dataset_size=None,
-        with_loc=True
+        fake_dataset_size=None
     )
 
     # Load model
@@ -94,7 +93,7 @@ def test(args):
     pbar = tqdm(test_dataloader)
     for imgs, gt in pbar:
         imgs = imgs.to(device)
-        if args.dataset in ["livestock","mvtec"]:
+        if args.dataset in ["livestock","mvtec","miad"]:
             # gt is a segmentation mask
             gt_np = gt[0].permute(1, 2, 0).cpu().numpy()[..., 0]
             gt_np = (gt_np - np.amin(gt_np)) / (np.amax(gt_np) - np.amin(gt_np))
@@ -103,7 +102,7 @@ def test(args):
             x_rec = get_error_pixel_wise(model, imgs)
             x_rec = model.mean_from_lambda(x_rec)
 
-        if args.dataset == "livestock" or args.dataset == "mvtec":
+        if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
             score, ssim_map = dissimilarity_func(x_rec[0], imgs[0], 11)
 
         ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
@@ -134,7 +133,7 @@ def test(args):
         amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
             - np.amin(amaps)))
 
-        if args.dataset in ["livestock","mvtec"]:
+        if args.dataset in ["livestock","mvtec", "miad"]:
             preds = amaps.copy() 
             mask = np.zeros(gt_np.shape)
 
@@ -203,8 +202,8 @@ def test_on_train(args, model):
     # fake_dataset_size=None leads a test on all the test dataset
     test_dataloader, test_dataset = get_test_dataloader(
         args,
-        fake_dataset_size=None,
-        with_loc=True
+        fake_dataset_size=None
+        
     )
 
     
@@ -220,7 +219,7 @@ def test_on_train(args, model):
     pbar = tqdm(test_dataloader)
     for imgs, gt in pbar:
         imgs = imgs.to(device)
-        if args.dataset in ["livestock","mvtec"]:
+        if args.dataset in ["livestock","mvtec","miad"]:
             # gt is a segmentation mask
             gt_np = gt[0].permute(1, 2, 0).cpu().numpy()[..., 0]
             gt_np = (gt_np - np.amin(gt_np)) / (np.amax(gt_np) - np.amin(gt_np))
@@ -229,7 +228,7 @@ def test_on_train(args, model):
             x_rec = get_error_pixel_wise(model, imgs)
             x_rec = model.mean_from_lambda(x_rec)
 
-        if args.dataset == "livestock" or args.dataset == "mvtec":
+        if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
             score, ssim_map = dissimilarity_func(x_rec[0], imgs[0], 11)
 
         ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
@@ -260,7 +259,7 @@ def test_on_train(args, model):
         amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
             - np.amin(amaps)))
 
-        if args.dataset in ["livestock","mvtec"]:
+        if args.dataset in ["livestock","mvtec","miad"]:
             preds = amaps.copy() 
             mask = np.zeros(gt_np.shape)
 
@@ -284,7 +283,7 @@ def test_on_train(args, model):
 if __name__ == "__main__":
     args = parse_args()
 
-    if args.dataset == "livestock" or args.dataset == "mvtec":
+    if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
         m_auc = test(
             args,
             )

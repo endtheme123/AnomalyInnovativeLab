@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument("--exp", default=time.strftime("%Y%m%d-%H%M%S"))
     parser.add_argument("--dataset", default="livestock")
     parser.add_argument("--category", default=None)
+    parser.add_argument("--fake_data_size", default=None)
     parser.add_argument("--defect", default=None)
     parser.add_argument(
         "--defect_list",
@@ -34,6 +35,7 @@ def parse_args():
     parser.add_argument("--corr_type", default="corr_exp")
     parser.add_argument("--force_train", dest='force_train', action='store_true')
     parser.add_argument("--intest", dest='intest', action='store_true')
+    # parser.add_argument("--all_in", dest='all_in', action='store_true')
     parser.set_defaults(force_train=False)
     parser.add_argument("--force_cpu", dest='force_cpu', action='store_true')
     parser.set_defaults(force_train=False)
@@ -90,6 +92,13 @@ def get_train_dataloader(args, fake_dataset_size=None):
             fake_dataset_size=1024 if fake_dataset_size is None else
                 fake_dataset_size,
         )
+    elif args.dataset == "miad":
+        
+        train_dataset = MIADTrainDataset(
+            args.img_size,
+            fake_dataset_size=1024 if fake_dataset_size is None else
+                fake_dataset_size
+        )
     else:
         raise RuntimeError("No / Wrong dataset provided")
 
@@ -98,7 +107,7 @@ def get_train_dataloader(args, fake_dataset_size=None):
 
     return train_dataloader, train_dataset
 
-def get_test_dataloader(args, fake_dataset_size=30, with_loc=False):
+def get_test_dataloader(args, fake_dataset_size=30):
     if args.dataset == "livestock":
         test_dataset = LivestockTestDataset(
             args.img_size,
@@ -107,6 +116,12 @@ def get_test_dataloader(args, fake_dataset_size=30, with_loc=False):
         )
     elif args.dataset == "mvtec":
         test_dataset = MVTecTestDataset(
+            args.img_size,
+            fake_dataset_size=512 if fake_dataset_size is None else
+                fake_dataset_size,
+        )
+    elif args.dataset == "miad":
+        test_dataset = MIADTestDataset(
             args.img_size,
             fake_dataset_size=512 if fake_dataset_size is None else
                 fake_dataset_size,
@@ -165,7 +180,8 @@ def print_loss_logs(f_name, out_dir, loss_dict, epoch, exp_name):
         for i, col in enumerate(arr.dtype.names[1:-1]):
             axis.plot(arr[arr.dtype.names[0]], arr[col], label=col)
         axis.legend()
-        fig.savefig(os.path.join(out_dir,
+        
+        fig.savefig(os.path.join(out_dir,exp_name,
             f"{exp_name}_loss_{epoch + 1}.png"))
         plt.close(fig) 
 
@@ -190,6 +206,6 @@ def print_AUCROC_logs(f_name, out_dir, loss_dict, epoch, exp_name):
         for i, col in enumerate(arr.dtype.names[1:-1]):
             axis.plot(arr[arr.dtype.names[0]], arr[col], label=col)
         axis.legend()
-        fig.savefig(os.path.join(out_dir,
+        fig.savefig(os.path.join(out_dir,exp_name,
             f"{exp_name}_test_{epoch + 1}.png"))
         plt.close(fig) 

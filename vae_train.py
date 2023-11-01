@@ -157,7 +157,9 @@ def main(args):
             f_name = os.path.join(out_dir, f"{args.exp}_loss_values.txt")
             print_loss_logs(f_name, out_dir, loss_dict, epoch, args.exp)
             if(args.intest):
-                tf_name = os.path.join(out_dir, f"{args.exp}_test_values.txt")
+                if not os.path.isdir(os.path.join(out_dir,args.exp)):
+                    os.mkdir(os.path.join(out_dir,args.exp))
+                tf_name = os.path.join(out_dir, args.exp, f"{args.exp}_test_values.txt")
                 print_AUCROC_logs(tf_name, out_dir, test_aucroc_dict, epoch, args.exp)        
             # save model parameters
             if (epoch + 1) % 100 == 0 or epoch in [0, 4, 9, 24]:
