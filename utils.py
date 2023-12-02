@@ -6,6 +6,7 @@ import torch
 from datasets import *
 from vae import VAE
 from vae_grf import VAE_GRF
+from vqvae import VQVAE
 import time
 import argparse
 
@@ -20,6 +21,10 @@ def parse_args():
     parser.add_argument("--z_dim", default=32, type=int)
     parser.add_argument("--lr", default=1e-4, type=float)
     parser.add_argument("--beta", default=1.0, type=float)
+    parser.add_argument("--gamma", default=1, type=float)
+    parser.add_argument("--delta", default=1, type=float)
+    parser.add_argument("--vqvae_dist", default='mse')
+    parser.add_argument("--num_embed", default=128, type=int)
     parser.add_argument("--exp", default=time.strftime("%Y%m%d-%H%M%S"))
     parser.add_argument("--dataset", default="livestock")
     parser.add_argument("--category", default=None)
@@ -44,6 +49,7 @@ def parse_args():
 
 def load_vqvae(args):
     if args.model == "vae":
+        print(args.nb_channels)
         model = VAE(latent_img_size=args.latent_img_size,
                 z_dim=args.z_dim,
                 img_size=args.img_size,
@@ -58,6 +64,19 @@ def load_vqvae(args):
                 img_size=args.img_size,
                 nb_channels=args.nb_channels,
                 beta=args.beta,
+            )
+    elif args.model =="vq_vae":
+        model = VQVAE(latent_img_size=args.latent_img_size,
+                z_dim=args.z_dim,
+                img_size=args.img_size,
+                nb_channels=args.nb_channels,
+                rec_loss=args.rec_loss,
+                beta=args.beta,
+                delta=args.delta,
+                gamma=args.gamma,
+                dist=args.vqvae_dist,
+                num_embed=args.num_embed,
+                dataset=args.dataset
             )
 
     return model

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 python vae_test.py\
-    --exp=test_vae_miad\
-    --dataset=miad\
+    --exp=test_vae_grf_mvtec_wood\
+    --dataset=mvtec\
     --lr=1e-4\
     --img_size=256\
     --batch_size=16\
@@ -11,6 +11,6 @@ python vae_test.py\
     --z_dim=256\
     --beta=1\
     --nb_channels=3\
-    --model=vae\
+    --model=vae_grf\
     --corr_type=corr_id\
-    --params_id=200\
+    --params_id=100\

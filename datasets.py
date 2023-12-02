@@ -6,11 +6,12 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import torch
+import cv2
 
 # Định sẵn đường đẫn đến các dataset
 DEFAULT_LIVESTOCK_DIR = "./data/livestock/part_III_cropped"
 DEFAULT_MVTEC_DIR = "E:/UnitWTF/lab ai/mvtec_anomaly_detection/wood"
-DEFAULT_MIAD_DIR = "E:/UnitWTF/dataset/metal_welding.zip/metal_welding"
+DEFAULT_MIAD_DIR = "E:/UnitWTF/lab ai/electrical_insulator/electrical_insulator"
 # Traning Dataset for livestock
 class LivestockTrainDataset(Dataset):
     def __init__(self, img_size, fake_dataset_size):
@@ -177,6 +178,7 @@ class MVTecTrainDataset(Dataset):
                             img)) and img.endswith('png'))],
                             size=fake_dataset_size)
                             )
+        self.img_size = img_size
         self.fake_dataset_size = fake_dataset_size # needed otherwise there are
         # 125000 images, and this is too much
         self.transform = transforms.Compose([
@@ -193,6 +195,10 @@ class MVTecTrainDataset(Dataset):
 
     def __getitem__(self, index):
         index = index % self.nb_img
+        # img = cv2.imread(self.img_files[index])
+        
+        # img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+        # img = self.transform(img)
         img = Image.open(self.img_files[index])
         
         return self.transform(img), 1 # one if the ground truth if there is one
@@ -200,7 +206,7 @@ class MVTecTrainDataset(Dataset):
 class MIADTestDataset(Dataset):
     def __init__(self, img_size, fake_dataset_size):
         if os.path.isdir(DEFAULT_MIAD_DIR):
-            self.img_dir = os.path.join(DEFAULT_MIAD_DIR, "test", "weld_beading")
+            self.img_dir = os.path.join(DEFAULT_MIAD_DIR, "test", "broken")
         else:
             self.img_dir = UNDEFINE
         self.img_files = list(
@@ -241,23 +247,23 @@ class MIADTrainDataset(Dataset):
         print("all_in")
         # if not all_in:
 
-        #     self.img_files = list(
-        #                         np.random.choice(
-        #                             [os.path.join(self.img_dir, img)
-        #                         for img in os.listdir(self.img_dir)
-        #                         if (os.path.isfile(os.path.join(self.img_dir,
-        #                         img)) and img.endswith('png'))],
-        #                         size=fake_dataset_size)
-        #     )
-        # else:                        
         self.img_files = list(
-                            
+                            np.random.choice(
                                 [os.path.join(self.img_dir, img)
                             for img in os.listdir(self.img_dir)
                             if (os.path.isfile(os.path.join(self.img_dir,
-                            img)) and img.endswith('png'))]
-                            )
-        self.fake_dataset_size = fake_dataset_size # needed otherwise there are
+                            img)) and img.endswith('png'))],
+                            size=fake_dataset_size)
+        )
+        # else:                        
+        # self.img_files = list(
+                            
+        #                         [os.path.join(self.img_dir, img)
+        #                     for img in os.listdir(self.img_dir)
+        #                     if (os.path.isfile(os.path.join(self.img_dir,
+        #                     img)) and img.endswith('png'))]
+        #                     )
+        # self.fake_dataset_size = fake_dataset_size # needed otherwise there are
         # 125000 images, and this is too much
         self.transform = transforms.Compose([
             transforms.Resize(size=(img_size, img_size)),

@@ -5,6 +5,9 @@ import numpy as np
 from tqdm import tqdm
 from skimage.metrics import structural_similarity
 import torch
+from vqvae import VQVAE
+from scipy.ndimage import label
+from scipy.ndimage.morphology import binary_dilation
 from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -32,9 +35,44 @@ def ssim(a, b, win_size):
     return 1 - score, np.product((1 - full), axis=2)
 
 def get_error_pixel_wise(model, x, loss="rec_loss"):
+    if(type(model) is VQVAE):
+        z_e_x = model.encoder(x)
+
+        # with the old ugly VQVAE functions:
+        z = model.codebook(z_e_x) # this is where gradient cannot flow
+        z_q_x_st, z_q_x = model.codebook.straight_through(z_e_x)
+        x_rec = model.decoder(z_q_x_st)
+
+        if type(model) is VQVAE:
+            alignement_loss = (
+                torch.square(
+                    z_e_x - z_q_x,
+                )
+            ).detach()
+
+        return (alignement_loss, x_rec, z, z_e_x)
+    
     x_rec, _ = model(x)
     
     return x_rec
+
+def create_segmentation(amaps, amaps2, rec_maps, dataset):
+    if isinstance(amaps, torch.Tensor):
+        amaps = amaps.detach().cpu().numpy()
+
+    mask = (amaps>= 0.99).astype(np.int8) #NOTE 0.59 if M=512 !!!
+    mask2 = ((amaps2 >= 0.01)).astype(np.int8) #0.01 for VQVAE
+
+    mask2 = binary_dilation(mask2, iterations=4).astype(np.uint8)
+
+    ## get intersection
+    L, _ = label(mask2)
+    lbls_interest = L[(mask == 1)]
+    lbls_interest = lbls_interest[lbls_interest != 0]
+    mask_ = mask.copy()
+    mask = (np.isin(L, lbls_interest)).astype(np.int8)
+
+    return mask, mask2, mask_, L
 
 def test(args):
     ''' livestock testing pipeline '''
@@ -123,7 +161,7 @@ def test(args):
 
         # MAD metric
         amaps = mad
-
+        
         # SM metric
         #amaps = ssim_map
 
@@ -224,41 +262,83 @@ def test_on_train(args, model):
             gt_np = gt[0].permute(1, 2, 0).cpu().numpy()[..., 0]
             gt_np = (gt_np - np.amin(gt_np)) / (np.amax(gt_np) - np.amin(gt_np))
 
-        with torch.no_grad():
-            x_rec = get_error_pixel_wise(model, imgs)
+        
+        
+        if args.model == "vq_vae":
+            with torch.no_grad():
+                align_loss, x_rec, z, _ =  get_error_pixel_wise(model, imgs)
+                z = z[0].cpu().numpy()
+                
+                align_loss = align_loss.permute(0, 2, 3, 1)[0].cpu().numpy()
+                align_loss = np.median(align_loss, axis=-1)
+
+                rec_loss = x_rec.permute(0, 2, 3, 1)[0].cpu().numpy()
+                rec_loss = np.mean(rec_loss, axis=-1)
+
+            win_size = 21
+
+            score, amaps2 = dissimilarity_func(x_rec[0], imgs[0], win_size=win_size)
+            rec_maps = rec_loss #((rec_loss - np.amin(rec_loss)) / 
+            align_loss[:1, :]  = 0#np.mean(align_loss[1:-1, 1:-1]) 
+            align_loss[:, -1:] = 0#np.mean(align_loss[1:-1, 1:-1]) 
+            align_loss[:, :1]  = 0#np.mean(align_loss[1:-1, 1:-1]) 
+            align_loss[-1:, :] = 0#np.mean(align_loss[1:-1, 1:-1]) 
+            
+            align_loss = align_loss.repeat(8, axis=0).repeat(8, axis=1)
+            amaps = align_loss
+            amaps2_nonorm = amaps2.copy()
+            amaps_nonorm = align_loss.copy()
+            amaps2 = ((amaps2 - np.amin(amaps2)) / (np.amax(amaps2) - np.amin(amaps2)))
+            rec_maps = (rec_maps - np.amin(rec_maps)) / (np.amax(rec_maps) - np.amin(rec_maps))
+            amaps = ((align_loss - np.amin(align_loss[2:-2, 2:-2])) / 
+                (np.amax(align_loss[2:-2, 2:-2]) - np.amin(align_loss[2:-2, 2:-2])))
+            sm = amaps2.copy()
+            am = amaps.copy()
+
+            pred_score = [1-np.amax(np.maximum(amaps2_nonorm, amaps_nonorm))]
+            mask, mask2, mask_, L = create_segmentation(amaps, amaps2, rec_maps,
+                args.dataset)
+
+            sm_bar = mask2.copy()
+            am_bar = mask_.copy()
+            amaps = mask.copy()
+
+        else :
+            with torch.no_grad():
+                x_rec = get_error_pixel_wise(model, imgs)
+                x_rec = model.mean_from_lambda(x_rec)
+
+            if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
+                score, ssim_map = dissimilarity_func(x_rec[0], imgs[0], 11)
+
+            ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
+            - np.amin(ssim_map)))
+
+            x_rec, _ = model(imgs)
             x_rec = model.mean_from_lambda(x_rec)
 
-        if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
-            score, ssim_map = dissimilarity_func(x_rec[0], imgs[0], 11)
+            
+            mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
+                dim=(0,1))), dim=(0,1))
 
-        ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
-        - np.amin(ssim_map)))
+            mad = mad.detach().cpu().numpy()
 
-        x_rec, _ = model(imgs)
-        x_rec = model.mean_from_lambda(x_rec)
+            mad = ((mad - np.amin(mad)) / (np.amax(mad)
+                - np.amin(mad)))
 
-        mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
-            dim=(0,1))), dim=(0,1))
+            mad = mad.repeat(8, axis=0).repeat(8, axis=1)
 
-        mad = mad.detach().cpu().numpy()
+            # MAD metric
+            amaps = mad
 
-        mad = ((mad - np.amin(mad)) / (np.amax(mad)
-            - np.amin(mad)))
+            # SM metric
+            #amaps = ssim_map
 
-        mad = mad.repeat(8, axis=0).repeat(8, axis=1)
+            # MAD*SM metric
+            #amaps = mad * ssim_map
 
-        # MAD metric
-        amaps = mad
-
-        # SM metric
-        #amaps = ssim_map
-
-        # MAD*SM metric
-        #amaps = mad * ssim_map
-
-        amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
-            - np.amin(amaps)))
-
+            amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
+                - np.amin(amaps)))
         if args.dataset in ["livestock","mvtec","miad"]:
             preds = amaps.copy() 
             mask = np.zeros(gt_np.shape)

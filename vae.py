@@ -5,7 +5,7 @@ from torchvision.models.resnet import resnet18
 
 class VAE(nn.Module):
 
-    def __init__(self, img_size, nb_channels, latent_img_size, z_dim, beta=1):
+    def __init__(self, img_size, nb_channels, latent_img_size, z_dim, rec_loss="xent", beta=1, delta=1):
         '''
         '''
         super(VAE, self).__init__()
@@ -15,7 +15,8 @@ class VAE(nn.Module):
         self.latent_img_size = latent_img_size
         self.z_dim = z_dim
         self.beta = beta
-
+        self.rec_loss = rec_loss
+        self.delta = delta
         self.nb_conv = int(np.log2(img_size // latent_img_size))
         # the depth we will have at the end of the encoder given that a
         # convolution incease depth by 2 starting at 32 after the first
@@ -107,6 +108,7 @@ class VAE(nn.Module):
         mu, logvar = self.encoder(x)
         z = self.reparameterize(mu, logvar)
         self.mu = mu
+        print(mu.shape)
         self.logvar = logvar
         return self.decoder(z), (mu, logvar)
 
