@@ -23,6 +23,11 @@ class VAE(nn.Module):
         self.max_depth_conv = 2 ** (4 + self.nb_conv)
         
         self.resnet = resnet18(pretrained=False)
+        self.dino = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        self.dino_entry = nn.Squential(
+            nn.Conv2d(self.nb_channels, 384, kernel_size=7,
+                stride=2, padding=3, bias=False)
+        )
         self.resnet_entry = nn.Sequential(
             nn.Conv2d(self.nb_channels, 64, kernel_size=7,
                 stride=2, padding=3, bias=False),

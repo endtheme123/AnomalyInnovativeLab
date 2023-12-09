@@ -38,10 +38,10 @@ def train(model, train_loader, device, optimizer, epoch):
             input_mb
         )
 
-        (-loss).backward()
+        (-loss).backward() #calculate the gradient => đạo hàm
         train_loss += loss.item()
         loss_dict = update_loss_dict(loss_dict, loss_dict_new)
-        optimizer.step()
+        optimizer.step() #chạy adam với loss đã được tính
     
     nb_mb_it = (len(train_loader.dataset) // input_mb.shape[0])
     train_loss /= nb_mb_it

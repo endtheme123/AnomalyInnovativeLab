@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python vae_train.py\
-    --exp=test_vqvae_miad_electrical_insulator\
+    --exp=test_vqvae_miad_wind_turbine\
     --dataset=miad\
     --category=wood\
     --lr=1e-4\
