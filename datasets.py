@@ -249,7 +249,7 @@ class MIADTrainDataset(Dataset):
         print("all_in")
         # if not all_in:
 
-        self.loc_img_files = list(
+        self.img_files = list(
                             np.random.choice(
                                 [os.path.join(self.img_dir, img)
                             for img in os.listdir(self.img_dir)
