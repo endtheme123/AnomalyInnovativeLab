@@ -1,8 +1,8 @@
 #!/bin/bash
 
 python vae_test.py\
-    --exp=test_vae_miad_photovoltaic\
-    --dataset=miad\
+    --exp=test_vae_grf_mvtec_tile\
+    --dataset=mvtec\
     --lr=1e-4\
     --img_size=256\
     --batch_size=8\
@@ -11,6 +11,6 @@ python vae_test.py\
     --z_dim=256\
     --beta=1\
     --nb_channels=3\
-    --model=vae\
+    --model=vae_grf\
     --corr_type=corr_id\
     --params_id=100\

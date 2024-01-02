@@ -11,7 +11,7 @@ import itertools
 
 # Định sẵn đường đẫn đến các dataset
 DEFAULT_LIVESTOCK_DIR = "./data/livestock/part_III_cropped"
-DEFAULT_MVTEC_DIR = "E:/UnitWTF/lab ai/mvtec_anomaly_detection/wood"
+DEFAULT_MVTEC_DIR = "E:/UnitWTF/lab ai/mvtec_anomaly_detection/tile"
 DEFAULT_MIAD_DIR = "/home/endtheme/Downloads/wind_turbine"
 DEFAULT_UBC_DIR = "F:/UBC-OCEAN/train_images"
 # Traning Dataset for livestock
@@ -133,7 +133,7 @@ class MVTecTrainDataset(Dataset):
 class MVTecTestDataset(Dataset):
     def __init__(self, img_size, fake_dataset_size):
         if os.path.isdir(DEFAULT_MVTEC_DIR):
-            self.img_dir = os.path.join(DEFAULT_MVTEC_DIR, "test", "hole")
+            self.img_dir = os.path.join(DEFAULT_MVTEC_DIR, "test", "crack")
         else:
             self.img_dir = UNDEFINE
         self.img_files = list(

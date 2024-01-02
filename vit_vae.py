@@ -3,10 +3,11 @@ import torch
 from torch import nn
 from torchvision.models.resnet import resnet18
 from my_vit import ViT
+import copy
 
 class ViT_VAE(nn.Module):
 
-    def __init__(self, img_size, nb_channels, latent_img_size, z_dim, rec_loss="xent", beta=1, delta=1):
+    def __init__(self,batch_size, img_size, nb_channels, latent_img_size, z_dim, rec_loss="xent", beta=1, delta=1):
         '''
         '''
         super(ViT_VAE, self).__init__()
@@ -19,14 +20,15 @@ class ViT_VAE(nn.Module):
         self.rec_loss = rec_loss
         self.delta = delta
         self.dropout = nn.Dropout(p=0.5)
+        self.batch_size = batch_size
 
         # [b, 784] => [b, 20]
         # u: [b, 10]
         # sigma: [b, 10]
         self.vit = ViT(
-                        image_size = 224,
+                        image_size = 256,
                         patch_size = 16,
-                        num_classes = 32,
+                        num_classes = 256,
                         dim = 1024,
                         depth = 6,
                         heads = 16,
@@ -34,22 +36,74 @@ class ViT_VAE(nn.Module):
                         dropout = 0.1,
                         emb_dropout = 0.1
         )
+        print(self.vit)
 
-
-        
-        self.linear_up = nn.Sequential(
-            nn.Linear(16, 128),
-            nn.BatchNorm1d(128),
-            nn.GELU(),
-            nn.Linear(128, 256),
-            nn.BatchNorm1d(256),
-            nn.GELU(),
-            nn.Linear(256, 3*224*224),
+        self.linear_latent_channel  = nn.Sequential(
+             nn.Linear(256, 512),
+             nn.Dropout(0.5),
+             nn.GELU(),
+             nn.Linear(512, 1024),
+             nn.Dropout(0.5),
+             nn.GELU(),
 
         )
 
+        self.linear_stack = []
+        for i in range(32):
+            self.linear_stack.append(copy.deepcopy(self.linear_latent_channel))
+        
+        # self.linear_up = nn.Sequential(
+        #     nn.Linear(16, 128),
+        #     nn.BatchNorm1d(128),
+        #     nn.GELU(),
+        #     nn.Linear(128, 256),
+        #     nn.BatchNorm1d(256),
+        #     nn.GELU(),
+        #     nn.Linear(256, 3*224*224),
+
+        # )
+        self.initial_decoder = nn.Sequential(
+            nn.ConvTranspose2d(1, 16,
+                kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm2d(16),
+            nn.ReLU()
+        )
+        self.decoder_layers = []
+        for i in reversed(range(1,4)):
+            depth_in = 2 ** (i+1)
+            depth_out = 2 ** (i+1-1)
+            if i == 1:
+                depth_out = self.nb_channels
+                self.decoder_layers.append(nn.Sequential(
+                    nn.ConvTranspose2d(depth_in, depth_out, 4, 2, 1),
+                ))
+            else:
+                self.decoder_layers.append(nn.Sequential(
+                    nn.ConvTranspose2d(depth_in, depth_out, 4, 2, 1),
+                    nn.BatchNorm2d(depth_out),
+                    nn.ReLU()
+                ))
+        self.conv_decoder = nn.Sequential(
+            *self.decoder_layers
+        )
+
+    def latent_stablizer(self, x):
+        a = []
+        for layer in self.linear_stack:
+            layer.to(x.device)
+            
+            k = layer(x)
+            
+            a.append(k.reshape(self.batch_size, 32,32))
+
+        x = torch.stack(a, dim = 1)
+
+        return x
+
+
     def encoder(self, x):
         x = self.vit(x)
+        x = self.latent_stablizer(x)
         
         return x[:, :16], x[:, 16:]
 
@@ -62,7 +116,7 @@ class ViT_VAE(nn.Module):
             return mu
 
     def decoder(self, z):
-        x = self.linear_up(z)
+        x = self.conv_decoder(z)
         
         x = nn.Sigmoid()(x)
         return x
@@ -74,7 +128,7 @@ class ViT_VAE(nn.Module):
         print(mu.shape)
         self.logvar = logvar
         x_rec = self.decoder(z)
-        x_rec = x_rec.reshape(8,3,224,224)
+        # x_rec = x_rec.reshape(8,3,224,224)
         return x_rec, (mu, logvar)
 
     def xent_continuous_ber(self, recon_x, x, pixelwise=False):

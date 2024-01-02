@@ -81,7 +81,9 @@ def load_vqvae(args):
             )
     elif args.model == "vitvae":
         print(args.nb_channels)
-        model = ViT_VAE(latent_img_size=args.latent_img_size,
+        model = ViT_VAE(
+                batch_size=args.batch_size,
+                latent_img_size=args.latent_img_size,
                 z_dim=args.z_dim,
                 img_size=args.img_size,
                 nb_channels=args.nb_channels,
