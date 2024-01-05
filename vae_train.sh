@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python vae_train.py\
-    --exp=test_vae_grf_mvtec_leather\
+    --exp=test_vitvae_mvtec_tile\
     --dataset=mvtec\
     --category=wood\
     --lr=1e-4\

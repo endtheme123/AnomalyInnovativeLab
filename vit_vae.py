@@ -33,17 +33,17 @@ class ViT_VAE(nn.Module):
                         depth = 6,
                         heads = 16,
                         mlp_dim = 2048,
-                        dropout = 0.1,
+                        dropout = 0.0,
                         emb_dropout = 0.1
         )
         print(self.vit)
 
         self.linear_latent_channel  = nn.Sequential(
              nn.Linear(256, 512),
-             nn.Dropout(0.5),
+            #  nn.Dropout(0.5),
              nn.GELU(),
              nn.Linear(512, 1024),
-             nn.Dropout(0.5),
+            #  nn.Dropout(0.5),
              nn.GELU(),
 
         )
@@ -63,9 +63,9 @@ class ViT_VAE(nn.Module):
 
         # )
         self.initial_decoder = nn.Sequential(
-            nn.ConvTranspose2d(1, 16,
+            nn.ConvTranspose2d(1, 512,
                 kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(16),
+            nn.BatchNorm2d(512),
             nn.ReLU()
         )
         self.decoder_layers = []
@@ -87,25 +87,28 @@ class ViT_VAE(nn.Module):
             *self.decoder_layers
         )
 
-    def latent_stablizer(self, x):
-        a = []
-        for layer in self.linear_stack:
-            layer.to(x.device)
+    # def latent_stablizer(self, x):
+    #     a = []
+    #     for layer in self.linear_stack:
+    #         layer.to(x.device)
             
-            k = layer(x)
+    #         k = layer(x)
             
-            a.append(k.reshape(self.batch_size, 32,32))
+    #         a.append(k.reshape(self.batch_size, 32,32))
 
-        x = torch.stack(a, dim = 1)
+    #     x = torch.stack(a, dim = 1)
 
-        return x
+    #     return x
 
 
     def encoder(self, x):
         x = self.vit(x)
-        x = self.latent_stablizer(x)
-        
-        return x[:, :16], x[:, 16:]
+        x = self.linear_latent_channel(x)
+        x = x.reshape((self.batch_size, 32,32))
+        x = torch.unsqueeze(x, dim=1)
+        # x = self.latent_stablizer(x)
+        x = self.initial_decoder(x)
+        return x[:, :256], x[:, 256:]
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -116,6 +119,8 @@ class ViT_VAE(nn.Module):
             return mu
 
     def decoder(self, z):
+        # z = z.reshape(self.batch_size, 32,32)
+        
         x = self.conv_decoder(z)
         
         x = nn.Sigmoid()(x)
