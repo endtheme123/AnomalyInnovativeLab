@@ -163,7 +163,7 @@ def main(args):
                 tf_name = os.path.join(out_dir, args.exp, f"{args.exp}_test_values.txt")
                 print_AUCROC_logs(tf_name, out_dir, test_aucroc_dict, epoch, args.exp)        
             # save model parameters
-            if (epoch + 1) % 100 == 0 or epoch in [0, 4, 9, 24]:
+            if (epoch + 1) % 50 == 0 or epoch in [0, 4, 9, 24]:
                 # to resume a training optimizer state dict and epoch
                 # should also be saved
                 torch.save(model.state_dict(), os.path.join(

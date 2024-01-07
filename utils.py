@@ -7,7 +7,7 @@ from datasets import *
 from vae import VAE
 from vae_grf import VAE_GRF
 from vqvae import VQVAE
-from vit_vae import ViT_VAE
+from vit_vae import ViTVAE
 import time
 import argparse
 
@@ -81,8 +81,8 @@ def load_vqvae(args):
             )
     elif args.model == "vitvae":
         print(args.nb_channels)
-        model = ViT_VAE(
-                batch_size=args.batch_size,
+        model = ViTVAE(
+                # batch_size=args.batch_size,
                 latent_img_size=args.latent_img_size,
                 z_dim=args.z_dim,
                 img_size=args.img_size,

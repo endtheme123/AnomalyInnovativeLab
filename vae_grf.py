@@ -4,8 +4,9 @@ from torch import nn
 from torchvision.models.resnet import resnet18 as resnet18
 from torchvision.transforms.functional import rgb_to_grayscale
 from vae import VAE
+from vit_vae import ViTVAE
 
-class VAE_GRF(VAE):
+class VAE_GRF(ViTVAE):
 
     def __init__(self, img_size, nb_channels, latent_img_size, z_dim,
         corr_type, batch_size, beta=1):
