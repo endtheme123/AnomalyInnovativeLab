@@ -11,6 +11,7 @@ from scipy.ndimage.morphology import binary_dilation
 from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 from PIL import Image
+import torch.nn.functional as F
 from utils import (get_train_dataloader,
                    get_test_dataloader,
                    load_model_parameters,
@@ -195,7 +196,9 @@ def test(args):
 
             x_rec, _ = model(imgs)
             x_rec = model.mean_from_lambda(x_rec)
-
+            
+            model.mu = F.interpolate(model.mu, size=(28, 28), mode='bilinear', align_corners=False)
+            
             mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
                 dim=(0,1))), dim=(0,1))
 
@@ -364,6 +367,7 @@ def test_on_train(args, model):
             x_rec, _ = model(imgs)
             x_rec = model.mean_from_lambda(x_rec)
 
+            model.mu = F.interpolate(model.mu, size=(28, 28), mode='bilinear', align_corners=False)
             
             mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
                 dim=(0,1))), dim=(0,1))

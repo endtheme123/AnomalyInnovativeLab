@@ -215,26 +215,27 @@ class ViTVAE(nn.Module):
         self.beta = beta
         self.rec_loss = rec_loss
         self.delta = delta
-        self.nb_conv = int(np.log2((img_size+32) // latent_img_size))
-        self.max_depth_conv = 2 ** (4 + self.nb_conv)
-        self.init_en = nn.Sequential(
-            nn.Conv2d(4, 256,
-                kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            # nn.ConvTranspose2d(32, 128,
-            #     kernel_size=5, stride=1, padding=0),
-            # nn.BatchNorm2d(128),
-            # nn.ReLU(),
-            # nn.ConvTranspose2d(32, 256,
-            #     kernel_size=5, stride=1, padding=0),
-            # nn.BatchNorm2d(256),
-            # nn.ReLU(),
-            nn.ConvTranspose2d(256, 512,
-                kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(512),
-            nn.ReLU()
-        )
+        # self.nb_conv = int(np.log2((img_size+32) // latent_img_size))
+        self.nb_conv = 3
+        self.max_depth_conv = 2 ** (4 + self.nb_conv+1)
+        # self.init_en = nn.Sequential(
+        #     nn.Conv2d(4, 256,
+        #         kernel_size=4, stride=2, padding=1),
+        #     nn.BatchNorm2d(256),
+        #     nn.ReLU(),
+        #     # nn.ConvTranspose2d(32, 128,
+        #     #     kernel_size=5, stride=1, padding=0),
+        #     # nn.BatchNorm2d(128),
+        #     # nn.ReLU(),
+        #     # nn.ConvTranspose2d(32, 256,
+        #     #     kernel_size=5, stride=1, padding=0),
+        #     # nn.BatchNorm2d(256),
+        #     # nn.ReLU(),
+        #     nn.ConvTranspose2d(256, 512,
+        #         kernel_size=1, stride=1, padding=0),
+        #     nn.BatchNorm2d(512),
+        #     nn.ReLU()
+        # )
 
         self.vit = ViTModel.from_pretrained('google/vit-base-patch16-224')
         # self.vit = ViT(
@@ -249,17 +250,17 @@ class ViTVAE(nn.Module):
         #                 emb_dropout = 0.1
         # )
 
-        self.final_encoder = nn.Sequential(
-            nn.Linear(self.vit.config.hidden_size, latent_img_size * latent_img_size),
+        # self.final_encoder = nn.Sequential(
+        #     nn.Linear(self.vit.config.hidden_size, latent_img_size * latent_img_size),
             
-            nn.ReLU()
-        )
+        #     nn.ReLU()
+        # )
 
         self.out_en = nn.Sequential(
-            nn.ConvTranspose2d(4, 256,
-                kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
+            # nn.ConvTranspose2d(1, 256,
+            #     kernel_size=4, stride=2, padding=1),
+            # nn.BatchNorm2d(256),
+            # nn.ReLU(),
             # nn.ConvTranspose2d(32, 128,
             #     kernel_size=5, stride=1, padding=0),
             # nn.BatchNorm2d(128),
@@ -268,27 +269,43 @@ class ViTVAE(nn.Module):
             #     kernel_size=5, stride=1, padding=0),
             # nn.BatchNorm2d(256),
             # nn.ReLU(),
-            nn.ConvTranspose2d(256, 512,
+            nn.Conv2d(3, 512,
                 kernel_size=1, stride=1, padding=0),
             nn.BatchNorm2d(512),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         self.initial_decoder = nn.Sequential(
             nn.ConvTranspose2d(self.z_dim, self.max_depth_conv,
                 kernel_size=1, stride=1, padding=0),
             nn.BatchNorm2d(self.max_depth_conv),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         nb_conv_dec = self.nb_conv
 
         self.decoder_layers = []
-        for i in reversed(range(nb_conv_dec)):
-            depth_in = 2 ** (4 + i + 1)
-            depth_out = 2 ** (4 + i)
+        self.decoder_layers.append(nn.Sequential(
+                    nn.ConvTranspose2d(256, 128, 7, 1, 0),
+                    nn.BatchNorm2d(128),
+                    nn.ReLU()
+                ))
+        self.decoder_layers.append(nn.Sequential(
+                    nn.ConvTranspose2d(128, 64, 7, 1, 0),
+                    nn.BatchNorm2d(64),
+                    nn.ReLU()
+                ))
+
+        # self.decoder_layers.append(nn.Sequential(
+        #             nn.ConvTranspose2d(, depth_out, 4, 2, 1),
+        #             nn.BatchNorm2d(depth_out),
+        #             nn.ReLU()
+        #         ))
+        for i in reversed(range(1, nb_conv_dec+1)):
+            depth_in = 2 ** (2 + i + 1)
+            depth_out = 2 ** (2 + i)
             # print("depth out: ", depth_out)
-            if i == 0:
+            if i == 1:
                 depth_out = self.nb_channels
                 self.decoder_layers.append(nn.Sequential(
 
@@ -310,13 +327,13 @@ class ViTVAE(nn.Module):
         x = self.vit(x)[0][:,0,:]
 
         print("vit output: ", x.shape)
-        x = self.final_encoder(x)
-        # print("final encoder output: ", x.shape)
-        x = x.reshape(x.shape[0], 4, 14, 14)
+        # x = self.final_encoder(x)
+        print("final encoder output: ", x.shape)
+        x = x.reshape(x.shape[0], 3, 16, 16)
         # batch_size = x.shape[0]
         # x = x.reshape(batch_size,1, 32, 32)
         x = self.out_en(x)
-        # print("final encoder output: ", x.shape)
+        print("final encoder output: ", x.shape)
         return x[:, :self.z_dim], x[:, self.z_dim :]
 
     def reparameterize(self, mu, logvar):

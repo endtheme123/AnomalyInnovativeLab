@@ -71,13 +71,14 @@ class VAE_GRF(ViTVAE):
         '''
         Reparametrization trick inside fourier sampling
         '''
-        if self.training:
-            std = torch.exp(torch.mul(logvar, 0.5))
-            eps = torch.randn_like(std)
-            return eps * std + mu
+        # if self.training: 
+        std = torch.exp(torch.mul(logvar, 0.5))
+        eps = torch.randn_like(std)
+        return eps * std + mu
+        # else:
+        #   return mu
 
-        else:
-            return mu
+        
 
 
     def forward(self, x):
