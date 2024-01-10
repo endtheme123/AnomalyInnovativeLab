@@ -132,6 +132,8 @@ def test(args):
     model.eval()
 
     aucs = []
+    aucs_sm = []
+    aucs_mad_sm = []
 
     pbar = tqdm(test_dataloader)
     for imgs, gt in pbar:
@@ -196,7 +198,6 @@ def test(args):
 
             x_rec, _ = model(imgs)
             x_rec = model.mean_from_lambda(x_rec)
-            
             model.mu = F.interpolate(model.mu, size=(28, 28), mode='bilinear', align_corners=False)
             
             mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
@@ -210,29 +211,43 @@ def test(args):
             mad = mad.repeat(8, axis=0).repeat(8, axis=1)
 
             # MAD metric
-            # amaps = mad
+            amaps = mad
             
             # SM metric
-            #amaps = ssim_map
+            amaps_sm = ssim_map
 
             # MAD*SM metric
-            amaps = mad * ssim_map
+            amaps_mad_sm = mad * ssim_map
 
             amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
                 - np.amin(amaps)))
 
-        if args.dataset in ["livestock","mvtec", "miad"]:
+            amaps_sm = ((amaps_sm - np.amin(amaps_sm)) / (np.amax(amaps_sm)
+                - np.amin(amaps_sm)))
+
+            amaps_mad_sm = ((amaps_mad_sm- np.amin(amaps_mad_sm)) / (np.amax(amaps_mad_sm)
+                - np.amin(amaps_mad_sm)))
+
+        if  args.dataset in ["livestock","mvtec", "miad"]:
             preds = amaps.copy() 
+            preds_sm = amaps_sm.copy()
+            preds_mad_sm = amaps_mad_sm.copy()
             mask = np.zeros(gt_np.shape)
 
             try:
                 auc = roc_auc_score(gt_np.astype(np.int8).flatten(), preds.flatten())
+                auc_sm = roc_auc_score(gt_np.astype(np.int8).flatten(), preds_sm.flatten())
+                auc_mad_sm = roc_auc_score(gt_np.astype(np.int8).flatten(), preds_mad_sm.flatten())
                 aucs.append(auc)
+                # print("auc_sm", auc_sm)
+                aucs_sm.append(auc_sm)
+                aucs_mad_sm.append(auc_mad_sm)
             except ValueError:
                 pass
                 # ROCAUC will not be defined when one class only in y_true
-
         m_aucs = np.mean(aucs)
+        m_aucs_sm = np.mean(aucs_sm)
+        m_aucs_mad_sm = np.mean(aucs_mad_sm)
         print(m_aucs)
         pbar.set_description(f"mean ROCAUC: {m_aucs:.3f}")
 
@@ -252,9 +267,12 @@ def test(args):
         img_to_save.save(path_to_save + 'final_amap.png')
 
     m_auc = np.mean(aucs)
+    m_auc_sm = np.mean(aucs_sm, dtype=object)
+    m_auc_mad_sm = np.mean(aucs_mad_sm)
     print("Mean auc on", args.category, args.defect, m_auc)
-
-    return m_auc
+    print("Mean auc_sm on", args.category, args.defect, m_auc_sm)
+    print("Mean auc_mad_sm on", args.category, args.defect, m_auc_mad_sm)
+    return m_auc, m_auc_sm, m_auc_mad_sm
 
 
 
@@ -380,13 +398,13 @@ def test_on_train(args, model):
             mad = mad.repeat(8, axis=0).repeat(8, axis=1)
 
             # MAD metric
-            # amaps = mad
+            amaps = mad
 
             # SM metric
             #amaps = ssim_map
 
             # MAD*SM metric
-            amaps = mad * ssim_map
+            #amaps = mad * ssim_map
 
             amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
                 - np.amin(amaps)))
@@ -415,6 +433,6 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.dataset == "livestock" or args.dataset == "mvtec" or args.dataset == "miad":
-        m_auc = test(
+        m_auc, m_auc_sm, m_auc_mad_sm = test(
             args,
             )
