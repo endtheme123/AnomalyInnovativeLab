@@ -380,13 +380,13 @@ def test_on_train(args, model):
             mad = mad.repeat(8, axis=0).repeat(8, axis=1)
 
             # MAD metric
-            amaps = mad
+            # amaps = mad
 
             # SM metric
             #amaps = ssim_map
 
             # MAD*SM metric
-            #amaps = mad * ssim_map
+            amaps = mad * ssim_map
 
             amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
                 - np.amin(amaps)))
