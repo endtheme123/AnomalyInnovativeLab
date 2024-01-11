@@ -196,8 +196,7 @@ def test(args):
             ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
             - np.amin(ssim_map)))
 
-            x_rec, _ = model(imgs)
-            x_rec = model.mean_from_lambda(x_rec)
+            
             model.mu = F.interpolate(model.mu, size=(28, 28), mode='bilinear', align_corners=False)
             
             mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
@@ -248,8 +247,8 @@ def test(args):
         m_aucs = np.mean(aucs)
         m_aucs_sm = np.mean(aucs_sm)
         m_aucs_mad_sm = np.mean(aucs_mad_sm)
-        print(m_aucs)
-        pbar.set_description(f"mean ROCAUC: {m_aucs:.3f}")
+        print(m_aucs_mad_sm )
+        pbar.set_description(f"mean ROCAUC: {m_aucs_mad_sm :.3f}")
 
         ori = imgs[0].permute(1, 2, 0).cpu().numpy()
         gt = gt[0].permute(1, 2, 0).cpu().numpy()
@@ -382,9 +381,6 @@ def test_on_train(args, model):
             ssim_map = ((ssim_map - np.amin(ssim_map)) / (np.amax(ssim_map)
             - np.amin(ssim_map)))
 
-            x_rec, _ = model(imgs)
-            x_rec = model.mean_from_lambda(x_rec)
-
             model.mu = F.interpolate(model.mu, size=(28, 28), mode='bilinear', align_corners=False)
             
             mad = torch.mean(torch.abs(model.mu - torch.mean(model.mu,
@@ -398,13 +394,13 @@ def test_on_train(args, model):
             mad = mad.repeat(8, axis=0).repeat(8, axis=1)
 
             # MAD metric
-            amaps = mad
+            # amaps = mad
 
             # SM metric
             #amaps = ssim_map
 
             # MAD*SM metric
-            #amaps = mad * ssim_map
+            amaps = mad * ssim_map
 
             amaps = ((amaps - np.amin(amaps)) / (np.amax(amaps)
                 - np.amin(amaps)))

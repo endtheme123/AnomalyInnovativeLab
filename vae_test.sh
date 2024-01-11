@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python vae_test.py\
-    --exp=test_vae_grf_miad_photovoltaic_second\
+    --exp=test_vit_vae_mvtec_metal_nut\
     --dataset=mvtec\
     --lr=1e-3\
     --img_size=224\

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python vae_train.py\
-    --exp=test_vit_vae_mvtec_screw\
+    --exp=test_vit_vae_mvtec_pill\
     --dataset=mvtec\
     --category=wood\
     --lr=1e-3\
@@ -16,5 +16,5 @@ python vae_train.py\
     --model=vitvae\
     --corr_type=corr_id\
     --force_train\
-    --intest
+    
 
