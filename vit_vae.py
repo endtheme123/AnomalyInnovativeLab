@@ -339,12 +339,12 @@ class ViTVAE(nn.Module):
         return x[:, :self.z_dim], x[:, self.z_dim :]
 
     def reparameterize(self, mu, logvar):
-        if self.training:
-            std = torch.exp(torch.mul(logvar, 0.5))
-            eps = torch.randn_like(std)
-            return eps * std + mu
-        else:
-            return mu
+        # if self.training:
+        std = torch.exp(torch.mul(logvar, 0.5))
+        eps = torch.randn_like(std)
+        return eps * std + mu
+        # else:
+        #     return mu
 
     def decoder(self, z):
         # z = z.view(z.size(0), -1)
