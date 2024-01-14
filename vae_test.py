@@ -262,8 +262,8 @@ def test(args):
         img_to_save = Image.fromarray((rec * 255).astype(np.uint8))
         img_to_save.save(path_to_save + 'rec.png')
         cm = plt.get_cmap('jet')
-        amaps = cm(amaps)
-        img_to_save = Image.fromarray((amaps[..., :3] * 255).astype(np.uint8))
+        amaps_mad_sm = cm(amaps_mad_sm)
+        img_to_save = Image.fromarray((amaps_mad_sm[..., :3] * 255).astype(np.uint8))
         img_to_save.save(path_to_save + 'final_amap.png')
 
     m_auc = np.mean(aucs)

@@ -238,6 +238,8 @@ class ViTVAE(nn.Module):
         # )
 
         self.vit = ViTModel.from_pretrained('google/vit-base-patch16-224')
+        for param in self.vit.parameters():
+            param.requires_grad = False
         # self.vit = ViT(
         #                 image_size = 256,
         #                 patch_size = 16,
@@ -326,14 +328,14 @@ class ViTVAE(nn.Module):
         
         x = self.vit(x)[0][:,0,:]
 
-        print("vit output: ", x.shape)
+        # print("vit output: ", x.shape)
         # x = self.final_encoder(x)
-        print("final encoder output: ", x.shape)
+        # print("final encoder output: ", x.shape)
         x = x.reshape(x.shape[0], 3, 16, 16)
         # batch_size = x.shape[0]
         # x = x.reshape(batch_size,1, 32, 32)
         x = self.out_en(x)
-        print("final encoder output: ", x.shape)
+        # print("final encoder output: ", x.shape)
         return x[:, :self.z_dim], x[:, self.z_dim :]
 
     def reparameterize(self, mu, logvar):
