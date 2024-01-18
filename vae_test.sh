@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python vae_test.py\
-    --exp=test_vit_vae_mvtec_screw\
+    --exp=test_vit_vae_mvtec_pill\
     --dataset=mvtec\
     --lr=1e-3\
     --img_size=224\

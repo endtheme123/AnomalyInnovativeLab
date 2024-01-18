@@ -147,7 +147,7 @@ def get_test_dataloader(args, fake_dataset_size=30):
     elif args.dataset == "mvtec":
         test_dataset = MVTecTestDataset(
             args.img_size,
-            fake_dataset_size=512 if fake_dataset_size is None else
+            fake_dataset_size=128 if fake_dataset_size is None else
                 fake_dataset_size,
         )
     elif args.dataset == "miad":
