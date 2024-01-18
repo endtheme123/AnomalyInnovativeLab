@@ -11,7 +11,7 @@ import itertools
 
 # Định sẵn đường đẫn đến các dataset
 DEFAULT_LIVESTOCK_DIR = "./data/livestock/part_III_cropped"
-DEFAULT_MVTEC_DIR = "E:/UnitWTF/lab ai/mvtec_anomaly_detection/pill"
+DEFAULT_MVTEC_DIR = "E:/UnitWTF/lab ai/mvtec_anomaly_detection/tile"
 DEFAULT_MIAD_DIR = "E:/UnitWTF/lab ai/electrical_insulator/electrical_insulator"
 DEFAULT_UBC_DIR = "F:/UBC-OCEAN/train_images"
 # Traning Dataset for livestock
@@ -103,12 +103,10 @@ class MVTecTrainDataset(Dataset):
         else:
             self.img_dir = UNDEFINE
         self.img_files = list(
-                            np.random.choice(
                                 [os.path.join(self.img_dir, img)
                             for img in os.listdir(self.img_dir)
                             if (os.path.isfile(os.path.join(self.img_dir,
-                            img)) and img.endswith('png'))],
-                            size=fake_dataset_size)
+                            img)) and img.endswith('png'))]
                             )
         self.fake_dataset_size = fake_dataset_size # needed otherwise there are
         # 125000 images, and this is too much
@@ -122,7 +120,7 @@ class MVTecTrainDataset(Dataset):
         self.nb_channels = 3
 
     def __len__(self):
-        return max(self.nb_img, self.fake_dataset_size)
+        return self.nb_img
 
     def __getitem__(self, index):
         index = index % self.nb_img
@@ -133,16 +131,14 @@ class MVTecTrainDataset(Dataset):
 class MVTecTestDataset(Dataset):
     def __init__(self, img_size, fake_dataset_size):
         if os.path.isdir(DEFAULT_MVTEC_DIR):
-            self.img_dir = os.path.join(DEFAULT_MVTEC_DIR, "test", "color")
+            self.img_dir = os.path.join(DEFAULT_MVTEC_DIR, "test", "crack")
         else:
             self.img_dir = UNDEFINE
         self.img_files = list(
-                            np.random.choice(
                                 [os.path.join(self.img_dir, img)
                             for img in os.listdir(self.img_dir)
                             if (os.path.isfile(os.path.join(self.img_dir, img))
-                            and img.endswith('.png'))],
-                            size=fake_dataset_size)
+                            and img.endswith('.png'))]
                             )
         self.fake_dataset_size = fake_dataset_size # needed otherwise there are
         self.gt_files = [s.replace(".png", "_mask.png").replace("test","ground_truth") for s in self.img_files]
@@ -157,7 +153,7 @@ class MVTecTestDataset(Dataset):
         self.nb_channels = 3
 
     def __len__(self):
-        return self.fake_dataset_size
+        return self.nb_img
 
     def __getitem__(self, index):
         img = Image.open(self.img_files[index])
